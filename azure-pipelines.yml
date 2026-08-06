@@ -4,18 +4,37 @@ trigger:
 pool:
   name: node-pool
 
-steps:
-- checkout: self
+stages:
 
-- script: |
-    docker build -t node-app:latest .
-  displayName: Build Docker Image
+- stage: Build
+  displayName: Build Stage
 
-- script: |
-    docker stop node-app || true
-    docker rm node-app || true
-  displayName: Remove Old Container
+  jobs:
+  - job: BuildJob
+    displayName: Build Docker Image
 
-- script: |
-    docker run -d --name node-app -p 80:5050 node-app:latest
-  displayName: Run Container
+    steps:
+    - checkout: self
+      clean: true
+
+    - script: |
+        docker build -t myapp:latest .
+      displayName: Build Docker Image
+
+- stage: Deploy
+  displayName: Deploy Stage
+  dependsOn: Build
+
+  jobs:
+  - job: DeployJob
+    displayName: Deploy Docker Container
+
+    steps:
+    - script: |
+        docker stop node-app || true
+        docker rm node-app || true
+      displayName: Remove Old Container
+
+    - script: |
+        docker run -d --name node-app -p 80:5050 myapp:latest
+      displayName: Run Docker Container
